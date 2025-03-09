@@ -1,0 +1,2164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREENTENDO | Interactive Gameboy simulator</title>
+    <meta name="description" content="An interactive Game Boy simulator with classic games like Snake, Pong, and Space Invaders. Experience nostalgic gaming with authentic controls and visuals.">
+  
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon/android-chrome-512x512.png">
+    <link rel="manifest" href="/favicon/webmanifest.json">
+    <meta name="theme-color" content="#10b981">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="GREENTENDO | Interactive Game Boy Simulator">
+    <meta property="og:description" content="An interactive Game Boy simulator with classic games like Snake, Pong, and Space Invaders. Experience nostalgic gaming with authentic controls and visuals.">
+    <meta property="og:image" content="https://i.ibb.co/kV4sQS0j/greentendo.jpg">
+    <meta property="og:url" content="https://saganaki22.github.io/Greentendo/">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GREENTENDO | Interactive Game Boy Simulator">
+    <meta name="twitter:description" content="An interactive Game Boy simulator with classic games, authentic controls, and retro visuals. Play Snake, Pong, and Space Invaders!">
+    <meta name="twitter:image" content="https://i.ibb.co/kV4sQS0j/greentendo.jpg">
+    
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #10b981; /* teal-500 */
+            display: flex;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
+
+        main {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* Slider styles */
+        .size-control {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+        }
+        
+        .size-slider {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        .size-control span {
+            color: #fff;
+        }
+
+        /* Smooth transition for scaling */
+        .gameboy {
+            position: relative;
+            width: 280px;
+            height: 460px;
+            background-color: #FFFFFF; /* Pure white */
+            border-radius: 12px;
+            border-bottom-right-radius: 35px; /* Slightly more rounded corner */
+            box-shadow: 0 10px 15px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Top section with screen */
+        .gameboy-top {
+            position: relative;
+            width: 100%;
+            height: 240px;
+            background-color: #444444;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            border-bottom-right-radius: 0; /* Remove rounded bottom */
+        }
+
+        /* Remove the incorrect white curve */
+        .gameboy-top::after {
+            display: none;
+        }
+
+        /* Screen label adjustments */
+        .screen-label {
+            color: #CCCCCC;
+            font-size: 8px;
+            margin-bottom: 0.8rem;
+            text-align: center;
+        }
+
+        /* Power LED positioning */
+        .power-led {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #777777; /* Greyish color when off */
+            transition: background-color 0.3s;
+        }
+
+        .power-led.on {
+            background-color: #FFA500; /* Amber/orange when on */
+        }
+
+        /* Screen area container - centered properly */
+        .screen-area {
+            flex: 1;
+            background-color: #333333;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 0 auto;
+            width: 85%; /* Adjusted width for proper centering */
+            max-height: 180px;
+            box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.3);
+        }
+
+        /* Actual screen - restore green color */
+        .screen {
+            width: 100%;
+            height: 100%;
+            background-color: #8BAC0F; /* Classic Game Boy green */
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fix the game content positioning */
+        #game-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .game-canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Remove any CRT or scan effects */
+        .screen::before, .screen::after,
+        .crt-screen::before, .crt-screen::after {
+            display: none;
+        }
+
+        /* Fix power button position - bottom left */
+        .power-button {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            z-index: 5;
+            transition: background-color 0.3s, color 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .power-button.on {
+            background-color: #3CB371; /* Medium sea green */
+            color: white;
+        }
+
+        /* Ensure proper control spacing */
+        .gameboy-controls {
+            position: relative;
+            width: 100%;
+            padding-top: 0;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background-color: #FFFFFF; /* Pure white to match body */
+        }
+
+        /* Controls section */
+        .controls-top {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            margin-top: 25px;
+        }
+
+        /* D-pad */
+        .dpad {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            background-color: #E0E0E0; /* Light gray background */
+            border-radius: 50%;
+            overflow: visible;
+            margin-left: 5px;
+        }
+
+        .dpad::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+        }
+
+        /* D-pad cross part */
+        .dpad-cross {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 72px; /* 1.5x larger */
+            height: 72px; /* 1.5x larger */
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        .dpad-cross::before, .dpad-cross::after {
+            content: "";
+            position: absolute;
+            background-color: #000000; /* Pure black */
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        .dpad-cross::before {
+            width: 72px; /* 1.5x larger */
+            height: 24px; /* 1.5x larger */
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 3px; /* Slightly rounded edges */
+        }
+
+        .dpad-cross::after {
+            width: 24px; /* 1.5x larger */
+            height: 72px; /* 1.5x larger */
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            border-radius: 3px; /* Slightly rounded edges */
+        }
+
+        /* Improved d-pad buttons with larger clickable area */
+        .dpad-up, .dpad-right, .dpad-down, .dpad-left {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 5; /* Ensure it's above other elements */
+        }
+
+        .dpad-up {
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dpad-right {
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .dpad-down {
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .dpad-left {
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Add these rules to prevent button focus highlighting */
+        button {
+            outline: none !important; /* Remove outline on focus */
+        }
+
+        button:focus {
+            outline: none !important; /* Ensure no focus outline in all browsers */
+        }
+
+        /* Ensure only pressed state shows visual feedback for d-pad */
+        .dpad-up:active, .dpad-right:active, .dpad-down:active, .dpad-left:active {
+            opacity: 0.7;
+            background-color: rgba(100, 100, 100, 0.3); /* Subtle feedback */
+            border-radius: 4px;
+        }
+
+        /* Reset any focus styles that might persist */
+        .dpad-up:focus, .dpad-right:focus, .dpad-down:focus, .dpad-left:focus {
+            opacity: 1;
+            background-color: transparent;
+        }
+
+        /* Ensure A/B buttons only transform during active press */
+        .a-button:active, .b-button:active {
+            background-color: #cc0044; /* Darker red when pressed */
+            transform: translateY(3px); /* Increased for better visual feedback */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Reset any transform that might persist */
+        .a-button:focus, .b-button:focus {
+            transform: none;
+        }
+
+        /* Ensure Start/Select buttons only transform during active press */
+        .start-button:active, .select-button:active {
+            background-color: #666666; /* Darker when pressed */
+            transform: rotate(-25deg) translateY(2px); /* Keep rotation while providing feedback */
+        }
+
+        /* Reset any transform that might persist */
+        .start-button:focus, .select-button:focus {
+            transform: rotate(-25deg);
+        }
+
+        /* A/B buttons */
+        .action-buttons {
+            position: relative;
+            width: 108px;
+            height: 72px; /* Increased height to accommodate positioning */
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-right: 5px;
+        }
+
+        /* Remove old labels */
+        .a-label, .b-label {
+            display: none;
+        }
+
+        /* Style buttons with letters directly on them */
+        .a-button, .b-button {
+            width: 40px;
+            height: 40px;
+            background-color: #FF1A75; /* Brighter magenta to match image */
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+            z-index: 5; /* Ensure clickability */
+        }
+
+        .a-button {
+            right: 0;
+            top: 0;
+        }
+
+        .b-button {
+            right: 45px;
+            top: 30px;
+        }
+
+        .b-button::after {
+            content: "B";
+        }
+
+        .a-button::after {
+            content: "A";
+        }
+
+        .a-button:hover, .b-button:hover {
+            background-color: #FF3377; /* Lighter red */
+        }
+
+        /* START and SELECT button alignment with diagonal orientation */
+        .start-select {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            position: relative;
+        }
+
+        .start-button, .select-button {
+            width: 54px;
+            height: 16px;
+            background-color: #999999;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 9px;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(-25deg); /* Restore diagonal orientation */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: bold;
+            position: relative;
+            z-index: 5;
+        }
+
+        .start-button:hover, .select-button:hover {
+            background-color: #888888;
+        }
+
+        .start-button:active, .select-button:active {
+            background-color: #777777;
+            transform: rotate(-25deg) translateY(2px);
+        }
+
+        /* Position adjustment to ensure proper alignment */
+        .select-button {
+            left: -5px;
+        }
+
+        .start-button {
+            right: -5px;
+        }
+
+        /* Adjust speaker lines position and appearance */
+        .speaker-lines {
+            position: absolute;
+            bottom: 1.8rem;
+            right: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transform: rotate(-15deg); /* Slight angle to match image */
+        }
+
+        .speaker-line {
+            width: 22px;
+            height: 1.5px;
+            background-color: #DDDDDD;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideDownLogo {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(100%);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .animate-fade-out {
+            animation: fadeOut 0.5s forwards;
+        }
+
+        .animate-slide-down {
+            animation: slideDown 0.8s forwards;
+        }
+
+        .animate-slide-down-logo {
+            animation: slideDownLogo 1.5s forwards;
+        }
+
+        /* Nintendo logo */
+        .nintendo-logo {
+            position: relative;
+            height: 3rem;
+            width: 8rem;
+            border: 2px solid #0f380f;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+
+        .boot-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #9bbc0f;
+        }
+
+        /* GitHub button styles */
+        .github-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            z-index: 1000;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23fff' d='M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: transform 0.3s ease;
+        }
+
+        body.light-mode .github-button {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z'/%3E%3C/svg%3E");
+        }
+
+        .github-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <a href="https://github.com/Saganaki22/Greentendo" class="github-button" target="_blank" rel="noopener noreferrer"></a>
+        <div class="gameboy">
+            <!-- Top section with screen -->
+            <div class="gameboy-top">
+                <div class="screen-label">GREENTENDO</div>
+                
+                <!-- Power LED -->
+                <div class="power-led"></div>
+                
+                <!-- Screen area with inset -->
+                <div class="screen-area">
+                    <!-- Screen with scanline effect and curvature -->
+                    <div class="screen" id="game-screen"></div>
+                </div>
+            </div>
+
+            <!-- Controls section -->
+            <div class="gameboy-controls">
+                <div class="controls-top">
+                    <!-- D-pad -->
+                    <div class="dpad">
+                        <div class="dpad-cross"></div>
+                        <button class="dpad-up" id="dpad-up" aria-label="Up"></button>
+                        <button class="dpad-right" id="dpad-right" aria-label="Right"></button>
+                        <button class="dpad-down" id="dpad-down" aria-label="Down"></button>
+                        <button class="dpad-left" id="dpad-left" aria-label="Left"></button>
+                    </div>
+
+                    <!-- A/B buttons -->
+                    <div class="action-buttons">
+                        <button class="b-button" id="b-button" aria-label="B button"></button>
+                        <button class="a-button" id="a-button" aria-label="A button"></button>
+                    </div>
+                </div>
+
+                <!-- Start/Select buttons -->
+                <div class="start-select">
+                    <button class="select-button" id="select-button" aria-label="Select button">SELECT</button>
+                    <button class="start-button" id="start-button" aria-label="Start button">START</button>
+                </div>
+
+                <!-- Speaker lines -->
+                <div class="speaker-lines">
+                    <div class="speaker-line"></div>
+                    <div class="speaker-line"></div>
+                    <div class="speaker-line"></div>
+                    <div class="speaker-line"></div>
+                    <div class="speaker-line"></div> <!-- Added one more line to better match the image -->
+                </div>
+
+                <!-- Power button -->
+                <button class="power-button" id="power-button" aria-label="Power button">
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Size control slider -->
+        <div class="size-control">
+            <span>Scale:</span>
+            <input type="range" min="50" max="200" value="100" class="size-slider" id="size-slider">
+        </div>
+    </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fun console message for curious developers
+    console.log('%cHey you scoundrel... i see you opened the devlog... remember to credit Saganaki22', 'color: #10b981; font-size: 14px; font-weight: bold;');
+
+    // DOM Elements
+    const gameScreen = document.getElementById('game-screen');
+    const powerButton = document.getElementById('power-button');
+    const powerLed = document.querySelector('.power-led');
+    const aButton = document.getElementById('a-button');
+    const bButton = document.getElementById('b-button');
+    const startButton = document.getElementById('start-button');
+    const selectButton = document.getElementById('select-button');
+    const dpadUp = document.getElementById('dpad-up');
+    const dpadDown = document.getElementById('dpad-down');
+    const dpadLeft = document.getElementById('dpad-left');
+    const dpadRight = document.getElementById('dpad-right');
+    const sizeSlider = document.getElementById('size-slider');
+    const gameboyElement = document.querySelector('.gameboy');
+
+    // Size slider handler
+    sizeSlider.addEventListener('input', function() {
+        const scale = this.value / 100;
+        gameboyElement.style.transform = `scale(${scale})`;
+    });
+
+    // Game state
+    let isPoweredOn = false;
+    let isShuttingDown = false;
+    let bootStage = 0;
+    let bootSequenceComplete = false;
+    let currentGame = "menu";
+    let isPaused = false;
+    let selectedMenuItem = 0;
+    let menuItems = ["space-invaders", "snake", "pong"];
+    let canvas, ctx;
+    let gameLoopId = null;
+    let keyboardControlsActive = false;
+
+    // Initialize the canvas
+    function initCanvas() {
+        canvas = document.createElement('canvas');
+        canvas.width = 150;
+        canvas.height = 160;
+        canvas.className = 'game-canvas';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        gameScreen.innerHTML = '';
+        gameScreen.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        return ctx;
+    }
+
+    // Create a function to play a simple beep sound using Web Audio API
+    function playBootSound() {
+        try {
+            // Create audio context
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            
+            // Create oscillator
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            // Configure sound
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime); // C6
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            
+            // Connect nodes
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Play sound
+            oscillator.start();
+            
+            // Schedule the frequency changes
+            setTimeout(() => {
+                oscillator.frequency.setValueAtTime(1318.51, audioCtx.currentTime); // E6
+            }, 100);
+            
+            setTimeout(() => {
+                oscillator.frequency.setValueAtTime(1567.98, audioCtx.currentTime); // G6
+            }, 200);
+            
+            // Stop after a short duration
+            setTimeout(() => {
+                oscillator.stop();
+            }, 300);
+        } catch (e) {
+            console.error("Could not create audio:", e);
+            // Continue without sound
+        }
+    }
+    
+    // Game sound effects utility function
+    function playGameSound(soundType) {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            // Connect nodes
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Configure sound based on type
+            switch(soundType) {
+                case 'pong-paddle':
+                    // Higher pitched 'bip' sound
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    setTimeout(() => oscillator.stop(), 50);
+                    break;
+                    
+                case 'snake-eat':
+                    // Satisfying 'gulp' sound
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    setTimeout(() => {
+                        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime + 0.05);
+                    }, 50);
+                    setTimeout(() => oscillator.stop(), 150);
+                    break;
+                    
+                case 'space-shoot':
+                    // Retro laser sound
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    // Quick frequency drop for laser effect
+                    setTimeout(() => {
+                        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    }, 30);
+                    setTimeout(() => oscillator.stop(), 80);
+                    break;
+            }
+            
+            // Start the sound
+            oscillator.start();
+            
+        } catch (e) {
+            console.error("Could not create game sound:", e);
+            // Continue without sound
+        }
+    }
+
+    // Initialize the simulator
+    function init() {
+        // Event listeners for controls
+        powerButton.addEventListener('click', (e) => {
+            handlePowerClick();
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        // Fix A button to ensure it works properly
+        aButton.addEventListener('click', (e) => {
+            if (!isPoweredOn || isShuttingDown) return;
+            
+            // Handle menu selection or game action
+            if (currentGame === "menu") {
+                currentGame = menuItems[selectedMenuItem];
+                startGame(currentGame);
+            } else if (isPaused) {
+                // In pause menu
+                if (selectedMenuItem === 0) {
+                    isPaused = false;
+                    renderScreen();
+                } else {
+                    currentGame = "menu";
+                    isPaused = false;
+                    renderScreen();
+                }
+            } else {
+                // In-game action - handle based on current game
+                handleButtonClick('a');
+            }
+            
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        // Make B button act as escape/back
+        bButton.addEventListener('click', (e) => {
+            if (!isPoweredOn || isShuttingDown) return;
+            
+            if (currentGame !== "menu") {
+                if (isPaused) {
+                    // If already in pause menu, go back to menu
+                    currentGame = "menu";
+                    isPaused = false;
+                    renderScreen();
+                } else {
+                    // Pause the game (acts as escape)
+                    isPaused = true;
+                    renderScreen();
+                }
+            }
+            
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        // Start button click handler - modified to check game over states
+        startButton.addEventListener('click', (e) => {
+            if (!isPoweredOn || isShuttingDown) return;
+            
+            // Check game over states first
+            if ((currentGame === "snake" && snakeGameOver) || 
+                (currentGame === "pong" && pongGameOver) || 
+                (currentGame === "space-invaders" && siShowEndScreen)) {
+                // In game over screens, Start button acts like A button
+                if (currentGame === "snake") {
+                    if (snakeSelectedOption === 0) {
+                        initSnake(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                } else if (currentGame === "pong") {
+                    if (pongSelectedOption === 0) {
+                        initPong(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                } else if (currentGame === "space-invaders") {
+                    if (siSelectedEndOption === 0) {
+                        initSpaceInvaders(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                }
+            } else if (currentGame === "menu") {
+                // Act as Enter/A button in menu
+                currentGame = menuItems[selectedMenuItem];
+                startGame(currentGame);
+            } else {
+                // Toggle pause state during gameplay
+                isPaused = !isPaused;
+                renderScreen();
+            }
+            
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        // Other button listeners
+        selectButton.addEventListener('click', (e) => {
+            handleButtonClick('select');
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        dpadUp.addEventListener('click', (e) => {
+            handleButtonClick('up');
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        dpadDown.addEventListener('click', (e) => {
+            handleButtonClick('down');
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        dpadLeft.addEventListener('click', (e) => {
+            handleButtonClick('left');
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        dpadRight.addEventListener('click', (e) => {
+            handleButtonClick('right');
+            e.currentTarget.blur(); // Remove focus after click
+        });
+        
+        // Add global touch event handler to prevent stuck button states
+        document.addEventListener('touchend', function() {
+            // Reset all button states when touch ends
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                button.blur();
+            });
+        });
+        
+        // Initial render
+        renderScreen();
+    }
+
+    // Improve keyboard controls setup to handle keyup events
+    function setupKeyboardControls() {
+        if (keyboardControlsActive) return;
+        
+        keyboardControlsActive = true;
+        document.addEventListener('keydown', handleKeyDown);
+        
+        // Add keyup handler to reset button states
+        document.addEventListener('keyup', function() {
+            // Ensure no buttons remain in active/focused state after key is released
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                button.blur();
+            });
+        });
+    }
+
+    // Update removeKeyboardControls to also remove the keyup listener
+    function removeKeyboardControls() {
+        if (!keyboardControlsActive) return;
+        
+        keyboardControlsActive = false;
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', function() {
+            const allButtons = document.querySelectorAll('button');
+            allButtons.forEach(button => {
+                button.blur();
+            });
+        });
+    }
+
+    // Power button click handler
+    function handlePowerClick() {
+        if (isPoweredOn) {
+            shutDown();
+        } else {
+            powerOn();
+        }
+    }
+
+    // Power on sequence
+    function powerOn() {
+        isPoweredOn = true;
+        powerLed.classList.add('on');
+        powerButton.classList.add('on');
+        gameScreen.classList.add('crt-screen');
+        bootStage = 0;
+        bootSequenceComplete = false;
+        setupKeyboardControls();
+        bootSequence();
+    }
+
+    // Shutdown sequence
+    function shutDown() {
+        isShuttingDown = true;
+        renderScreen();
+        
+        setTimeout(() => {
+            isShuttingDown = false;
+            isPoweredOn = false;
+            bootStage = 0;
+            bootSequenceComplete = false;
+            powerLed.classList.remove('on');
+            powerButton.classList.remove('on');
+            gameScreen.classList.remove('crt-screen');
+            removeKeyboardControls();
+            
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            renderScreen();
+        }, 800);
+    }
+
+    // Boot sequence animation
+    function bootSequence() {
+        if (bootStage === 0) {
+            renderScreen();
+            setTimeout(() => {
+                bootStage = 1;
+                bootSequence();
+            }, 800);
+        } else if (bootStage === 1) {
+            renderScreen();
+            setTimeout(() => {
+                bootStage = 2;
+                playBootSound(); // Use our custom audio function
+                bootSequence();
+            }, 1200);
+        } else if (bootStage === 2) {
+            renderScreen();
+            setTimeout(() => {
+                bootSequenceComplete = true;
+                currentGame = "menu";
+                isPaused = false;
+                selectedMenuItem = 0;
+                renderScreen();
+                startGameLoop();
+            }, 800);
+        }
+    }
+
+    // Handle keyboard input
+    function handleKeyDown(e) {
+        if (!isPoweredOn || isShuttingDown) return;
+
+        // Check if we're in a game over state first
+        const inGameOverScreen = (currentGame === "snake" && snakeGameOver) || 
+                               (currentGame === "pong" && pongGameOver) || 
+                               (currentGame === "space-invaders" && siShowEndScreen);
+
+        // Special keys that may have multiple functions
+        const isAKey = e.key === "a";
+
+        // In active games, 'a' key should function as D-pad left as first priority
+        // For navigation/menus/game-over screens, 'a' key should still function as A button
+        if (isAKey && !inGameOverScreen && !isPaused && currentGame !== "menu") {
+            // For Snake, Pong, and Space Invaders, use 'a' as left movement
+            if (currentGame === "snake") {
+                if (!snakeGameOver && snakeDirection !== "right") {
+                    snakeDirection = "left";
+                }
+                return;
+            } else if (currentGame === "pong") {
+                if (!pongGameOver) {
+                    playerPaddle.x = Math.max(0, playerPaddle.x - 20);
+                }
+                return;
+            } else if (currentGame === "space-invaders") {
+                if (!siGameOver && !siShowEndScreen) {
+                    siPlayer.x = Math.max(0, siPlayer.x - 5);
+                }
+                return;
+            }
+        }
+
+        // In game over screens, Enter/Space/Escape should all act as selection buttons, not pause
+        if (inGameOverScreen) {
+            if (e.key === "Enter" || e.key === " " || e.key === "a") {
+                // Act as selection/confirm
+                if (currentGame === "snake") {
+                    if (snakeSelectedOption === 0) {
+                        initSnake(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                } else if (currentGame === "pong") {
+                    if (pongSelectedOption === 0) {
+                        initPong(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                } else if (currentGame === "space-invaders") {
+                    if (siSelectedEndOption === 0) {
+                        initSpaceInvaders(); // Retry
+                    } else {
+                        currentGame = "menu"; // Exit to menu
+                        renderScreen();
+                    }
+                }
+                return;
+            }
+            
+            if (e.key === "Escape" || e.key === "Backspace" || e.key === "b") {
+                // Act as "Exit to Menu" shortcut
+                currentGame = "menu";
+                renderScreen();
+                return;
+            }
+            
+            // Allow navigation in game over screens
+            if (currentGame === "snake") {
+                if (e.key === "ArrowUp" || e.key === "w" || e.key === "ArrowDown" || e.key === "s") {
+                    snakeSelectedOption = snakeSelectedOption === 0 ? 1 : 0;
+                    renderSnake();
+                }
+                return;
+            } else if (currentGame === "pong") {
+                if (e.key === "ArrowUp" || e.key === "w" || e.key === "ArrowDown" || e.key === "s") {
+                    pongSelectedOption = pongSelectedOption === 0 ? 1 : 0;
+                    renderPong();
+                }
+                return;
+            } else if (currentGame === "space-invaders") {
+                if (e.key === "ArrowUp" || e.key === "w" || e.key === "ArrowDown" || e.key === "s") {
+                    siSelectedEndOption = siSelectedEndOption === 0 ? 1 : 0;
+                    renderSpaceInvaders();
+                }
+                return;
+            }
+        }
+
+        // Normal control flow for active gameplay
+        if (e.key === "Escape" || e.key === "Backspace" || e.key === "b") {
+            // B button functionality - back/escape
+            if (currentGame !== "menu") {
+                if (isPaused) {
+                    currentGame = "menu";
+                    isPaused = false;
+                    renderScreen();
+                } else {
+                    isPaused = true;
+                    renderScreen();
+                }
+            }
+            return;
+        }
+        
+        if (e.key === "Enter") {
+            // Start button functionality - pause/select
+            if (currentGame === "menu") {
+                currentGame = menuItems[selectedMenuItem];
+                startGame(currentGame);
+            } else {
+                isPaused = !isPaused;
+                renderScreen();
+            }
+            return;
+        }
+        
+        if (e.key === " " || (isAKey && (isPaused || currentGame === "menu"))) {
+            // A button functionality - select/action
+            // Only invoke if it's the Space key, or if it's the 'a' key AND we're in a menu or paused state
+            if (currentGame === "menu") {
+                currentGame = menuItems[selectedMenuItem];
+                startGame(currentGame);
+            } else if (isPaused) {
+                if (selectedMenuItem === 0) {
+                    isPaused = false;
+                    renderScreen();
+                } else {
+                    currentGame = "menu";
+                    isPaused = false;
+                    renderScreen();
+                }
+            } else if (currentGame === "space-invaders" && !siGameOver && !siShowEndScreen) {
+                // Special case for Space Invaders - in active gameplay, Space is still used for shooting
+                if (siBullets.length < 3) {
+                    siBullets.push({
+                        x: siPlayer.x + siPlayer.width / 2 - 1,
+                        y: siPlayer.y - 5,
+                        width: 2,
+                        height: 5
+                    });
+                    // Play shooting sound
+                    playGameSound('space-shoot');
+                }
+            }
+            return;
+        }
+
+        // Handle paused controls
+        if (isPaused) {
+            handlePausedControls(e.key);
+            return;
+        }
+
+        if (currentGame === "menu") {
+            handleMenuControls(e.key);
+        } else if (currentGame === "snake") {
+            handleSnakeControls(e.key);
+        } else if (currentGame === "pong") {
+            handlePongControls(e.key);
+        } else if (currentGame === "space-invaders") {
+            handleSpaceInvadersControls(e.key);
+        }
+    }
+
+    // Handle controls when paused
+    function handlePausedControls(key) {
+        if (key === "ArrowUp" || key === "w" || key === "ArrowDown" || key === "s") {
+            selectedMenuItem = (selectedMenuItem === 0) ? 1 : 0;
+            renderScreen();
+        } else if (key === "a" || key === "Enter" || key === " ") {
+            if (selectedMenuItem === 0) {
+                isPaused = false;
+                renderScreen();
+            } else {
+                currentGame = "menu";
+                isPaused = false;
+                renderScreen();
+            }
+        }
+    }
+
+    // Handle controls in menu
+    function handleMenuControls(key) {
+        if (key === "ArrowUp" || key === "w") {
+            selectedMenuItem = (selectedMenuItem > 0) ? selectedMenuItem - 1 : menuItems.length - 1;
+            renderScreen();
+        } else if (key === "ArrowDown" || key === "s") {
+            selectedMenuItem = (selectedMenuItem < menuItems.length - 1) ? selectedMenuItem + 1 : 0;
+            renderScreen();
+        } else if (key === "a" || key === "Enter" || key === " ") {
+            currentGame = menuItems[selectedMenuItem];
+            startGame(currentGame);
+        }
+    }
+
+    // Handle Snake controls
+    function handleSnakeControls(key) {
+        if (snakeGameOver) return;
+        
+        if ((key === "ArrowUp" || key === "w") && snakeDirection !== "down") snakeDirection = "up";
+        else if ((key === "ArrowDown" || key === "s") && snakeDirection !== "up") snakeDirection = "down";
+        else if (key === "ArrowLeft" && snakeDirection !== "right") snakeDirection = "left";
+        else if ((key === "ArrowRight" || key === "d") && snakeDirection !== "left") snakeDirection = "right";
+    }
+
+    // Handle Pong controls
+    function handlePongControls(key) {
+        if (pongGameOver) return;
+        
+        // Increased paddle speed from 10 to 20
+        if (key === "ArrowLeft") {
+            playerPaddle.x = Math.max(0, playerPaddle.x - 20);
+        } else if ((key === "ArrowRight" || key === "d")) {
+            playerPaddle.x = Math.min(150 - playerPaddle.width, playerPaddle.x + 20);
+        }
+    }
+
+    // Handle Space Invaders controls
+    function handleSpaceInvadersControls(key) {
+        if (siShowEndScreen) {
+            if (key === "ArrowUp" || key === "w" || key === "ArrowDown" || key === "s") {
+                siSelectedEndOption = (siSelectedEndOption === 0) ? 1 : 0;
+            } else if (key === "a" || key === "Enter" || key === " ") {
+                if (siSelectedEndOption === 0) {
+                    initSpaceInvaders();
+                } else if (siSelectedEndOption === 1) {
+                    currentGame = "menu";
+                    renderScreen();
+                }
+            }
+            return;
+        }
+
+        if (key === "ArrowLeft") {
+            siPlayer.x = Math.max(0, siPlayer.x - 5);
+        } else if ((key === "ArrowRight" || key === "d")) {
+            siPlayer.x = Math.min(150 - siPlayer.width, siPlayer.x + 5);
+        } else if ((key === " " || key === "Enter") && !siGameOver) {
+            if (siBullets.length < 3) {
+                siBullets.push({
+                    x: siPlayer.x + siPlayer.width / 2 - 1,
+                    y: siPlayer.y - 5,
+                    width: 2,
+                    height: 5
+                });
+                // Play shooting sound
+                playGameSound('space-shoot');
+            }
+        }
+    }
+
+    // Handle button clicks - modified to better handle game over states
+    function handleButtonClick(button) {
+        if (!isPoweredOn || isShuttingDown) return;
+
+        // Check if we're in a game over state
+        if (currentGame === "snake" && snakeGameOver) {
+            if (button === "up" || button === "down") {
+                snakeSelectedOption = snakeSelectedOption === 0 ? 1 : 0;
+                renderSnake();
+            } else if (button === "a") {
+                if (snakeSelectedOption === 0) {
+                    initSnake(); // Restart snake game
+                } else {
+                    currentGame = "menu";
+                    renderScreen();
+                }
+            }
+            return;
+        } else if (currentGame === "pong" && pongGameOver) {
+            if (button === "up" || button === "down") {
+                pongSelectedOption = pongSelectedOption === 0 ? 1 : 0;
+                renderPong();
+            } else if (button === "a") {
+                if (pongSelectedOption === 0) {
+                    initPong(); // Restart pong game
+                } else {
+                    currentGame = "menu";
+                    renderScreen();
+                }
+            }
+            return;
+        } else if (currentGame === "space-invaders" && siShowEndScreen) {
+            if (button === "up" || button === "down") {
+                siSelectedEndOption = (siSelectedEndOption === 0) ? 1 : 0;
+                renderSpaceInvaders();
+            } else if (button === "a") {
+                if (siSelectedEndOption === 0) {
+                    initSpaceInvaders(); // Restart Space Invaders
+                } else if (siSelectedEndOption === 1) {
+                    currentGame = "menu";
+                    renderScreen();
+                }
+            }
+            return;
+        }
+
+        // Normal control flow for active gameplay
+        if (isPaused) {
+            if (button === "up" || button === "down") {
+                selectedMenuItem = (selectedMenuItem === 0) ? 1 : 0;
+                renderScreen();
+            } else if (button === "a") {
+                if (selectedMenuItem === 0) {
+                    isPaused = false;
+                    renderScreen();
+                } else {
+                    currentGame = "menu";
+                    isPaused = false;
+                    renderScreen();
+                }
+            }
+            return;
+        }
+
+        if (currentGame === "menu") {
+            if (button === "up") {
+                selectedMenuItem = (selectedMenuItem > 0) ? selectedMenuItem - 1 : menuItems.length - 1;
+                renderScreen();
+            } else if (button === "down") {
+                selectedMenuItem = (selectedMenuItem < menuItems.length - 1) ? selectedMenuItem + 1 : 0;
+                renderScreen();
+            } else if (button === "a") {
+                currentGame = menuItems[selectedMenuItem];
+                startGame(currentGame);
+            }
+        } else if (currentGame === "snake") {
+            if (button === "up" && snakeDirection !== "down") snakeDirection = "up";
+            else if (button === "down" && snakeDirection !== "up") snakeDirection = "down";
+            else if (button === "left" && snakeDirection !== "right") snakeDirection = "left";
+            else if (button === "right" && snakeDirection !== "left") snakeDirection = "right";
+        } else if (currentGame === "pong") {
+            if (button === "left") {
+                playerPaddle.x = Math.max(0, playerPaddle.x - 20);
+            } else if (button === "right") {
+                playerPaddle.x = Math.min(150 - playerPaddle.width, playerPaddle.x + 20);
+            }
+        } else if (currentGame === "space-invaders") {
+            if (button === "left") {
+                siPlayer.x = Math.max(0, siPlayer.x - 5);
+            } else if (button === "right") {
+                siPlayer.x = Math.min(150 - siPlayer.width, siPlayer.x + 5);
+            } else if (button === "a" && !siGameOver) {
+                if (siBullets.length < 3) {
+                    siBullets.push({
+                        x: siPlayer.x + siPlayer.width / 2 - 1,
+                        y: siPlayer.y - 5,
+                        width: 2,
+                        height: 5
+                    });
+                    // Play shooting sound
+                    playGameSound('space-shoot');
+                }
+            }
+        }
+    }
+
+    // Render screen based on current state
+    function renderScreen() {
+        // Initialize the canvas if it doesn't exist
+        if (!canvas) {
+            initCanvas();
+        }
+
+        if (!isPoweredOn) {
+            // System off
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        if (isShuttingDown) {
+            // Shutting down
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
+
+        if (!bootSequenceComplete) {
+            renderBootScreen();
+            return;
+        }
+
+        if (isPaused) {
+            renderPauseScreen();
+            return;
+        }
+
+        if (currentGame === "menu") {
+            renderMenuScreen();
+            return;
+        }
+
+        // For actual games, rendering is done in their respective game loops
+    }
+
+    // Render boot screen
+    function renderBootScreen() {
+        if (bootStage === 0) {
+            // Boot stage 0: Solid green
+            ctx.fillStyle = "#0f380f";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else if (bootStage === 1) {
+            // Boot stage 1: Nintendo logo
+            ctx.fillStyle = "#9bbc0f";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Greentendo text
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "8px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GREENTENDO®", canvas.width / 2, 40);
+
+            // Nintendo logo placeholder
+            ctx.strokeStyle = "#0f380f";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(canvas.width / 2 - 32, 50, 64, 24);
+        } else {
+            // Boot stage 2: Final screen
+            ctx.fillStyle = "#9bbc0f";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Greentendo text
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "8px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GREENTENDO®", canvas.width / 2, 60);
+
+            // Divider line
+            ctx.fillStyle = "#0f380f";
+            ctx.fillRect(canvas.width / 4, 70, canvas.width / 2, 2);
+
+            // Text
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "8px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("SAGANAKI22", canvas.width / 2, 85);
+        }
+    }
+
+    // Render pause screen
+    function renderPauseScreen() {
+        ctx.fillStyle = "#9bbc0f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#0f380f";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("PAUSED", canvas.width / 2, 60);
+
+        ctx.font = "8px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(selectedMenuItem === 0 ? "▶ Continue" : "  Continue", 40, 80);
+        ctx.fillText(selectedMenuItem === 1 ? "▶ Exit to Menu" : "  Exit to Menu", 40, 100);
+    }
+
+    // Render menu screen
+    function renderMenuScreen() {
+        ctx.fillStyle = "#9bbc0f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#0f380f";
+        ctx.font = "16px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText("GAME SELECT", 15, 30);
+
+        ctx.font = "8px Arial";
+        
+        menuItems.forEach((game, index) => {
+            const displayName = game
+                .split("-")
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ");
+            
+            ctx.fillText(
+                selectedMenuItem === index ? `▶ ${displayName}` : `  ${displayName}`, 
+                25, 
+                60 + index * 20
+            );
+        });
+    }
+
+    // Start a game
+    function startGame(game) {
+        if (game === "snake") {
+            initSnake();
+        } else if (game === "pong") {
+            initPong();
+        } else if (game === "space-invaders") {
+            initSpaceInvaders();
+        }
+    }
+
+    // Start the game loop
+    function startGameLoop() {
+        if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+        }
+        
+        gameLoop();
+    }
+
+    // Main game loop
+    function gameLoop(timestamp) {
+        if (!isPoweredOn || isShuttingDown) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+            return;
+        }
+
+        if (currentGame === "snake" && !isPaused) {
+            updateSnake(timestamp);
+            renderSnake();
+        } else if (currentGame === "pong" && !isPaused) {
+            updatePong();
+            renderPong();
+        } else if (currentGame === "space-invaders" && !isPaused) {
+            updateSpaceInvaders(timestamp);
+            renderSpaceInvaders();
+        }
+
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    ////////////////////
+    // SNAKE GAME
+    ////////////////////
+    let snake = [];
+    let food = { x: 0, y: 0 };
+    let snakeDirection = "right";
+    let snakeGameOver = false;
+    let snakeScore = 0;
+    let snakeLevel = 1;
+    let snakeSpeed = 150;
+    let lastSnakeUpdateTime = 0;
+
+    // Initialize Snake game
+    function initSnake() {
+        snake = [{ x: 7, y: 7 }];
+        snakeDirection = "right";
+        snakeGameOver = false;
+        snakeScore = 0;
+        snakeLevel = 1;
+        snakeSpeed = 150;
+        lastSnakeUpdateTime = 0;
+        snakeSelectedOption = 0;
+        snakeEndScreenListenerActive = false;
+        spawnSnakeFood();
+    }
+
+    // Spawn food in random location
+    function spawnSnakeFood() {
+        const x = Math.floor(Math.random() * 15);
+        const y = Math.floor(Math.random() * 15);
+
+        // Make sure food doesn't spawn on snake
+        if (snake.some(segment => segment.x === x && segment.y === y)) {
+            spawnSnakeFood();
+        } else {
+            food = { x, y };
+        }
+    }
+
+    // Update Snake game state
+    function updateSnake(timestamp) {
+        if (snakeGameOver) return;
+
+        // Throttle updates based on speed
+        if (timestamp - lastSnakeUpdateTime < snakeSpeed) return;
+        lastSnakeUpdateTime = timestamp;
+
+        // Move snake
+        const head = { ...snake[0] };
+
+        switch (snakeDirection) {
+            case "up":
+                head.y -= 1;
+                break;
+            case "down":
+                head.y += 1;
+                break;
+            case "left":
+                head.x -= 1;
+                break;
+            case "right":
+                head.x += 1;
+                break;
+        }
+
+        // Check if game over (wall collision)
+        if (head.x < 0 || head.x >= 15 || head.y < 0 || head.y >= 15) {
+            snakeGameOver = true;
+            return;
+        }
+
+        // Check if snake hits itself
+        if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+            snakeGameOver = true;
+            return;
+        }
+
+        // Add new head to snake
+        snake.unshift(head);
+
+        // Check if snake eats food
+        if (head.x === food.x && head.y === food.y) {
+            snakeScore += 10;
+            
+            // Play eating sound
+            playGameSound('snake-eat');
+
+            // Level up every 50 points
+            if (snakeScore % 50 === 0) {
+                snakeLevel += 1;
+                snakeSpeed = Math.max(50, snakeSpeed - 10);
+            }
+
+            spawnSnakeFood();
+        } else {
+            // Remove tail if no food eaten
+            snake.pop();
+        }
+    }
+
+    // Render Snake game
+    function renderSnake() {
+        ctx.fillStyle = "#9bbc0f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid (optional)
+        ctx.strokeStyle = "#8bac0f";
+        for (let i = 0; i < 15; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * 10, 0);
+            ctx.lineTo(i * 10, 150);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, i * 10);
+            ctx.lineTo(150, i * 10);
+            ctx.stroke();
+        }
+
+        // Draw snake
+        ctx.fillStyle = "#0f380f";
+        snake.forEach(segment => {
+            ctx.fillRect(segment.x * 10, segment.y * 10, 10, 10);
+        });
+
+        // Draw food
+        ctx.fillStyle = "#0f380f";
+        ctx.fillRect(food.x * 10, food.y * 10, 10, 10);
+
+        // Draw score and level
+        ctx.fillStyle = "#0f380f";
+        ctx.font = "8px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`SCORE: ${snakeScore}`, 5, 10);
+        ctx.textAlign = "right";
+        ctx.fillText(`LEVEL: ${snakeLevel}`, 145, 10);
+
+        // Draw game over
+        if (snakeGameOver) {
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, 60);
+            
+            ctx.font = "8px Arial";
+            ctx.fillText(`FINAL SCORE: ${snakeScore}`, canvas.width / 2, 80);
+            
+            // Add retry option
+            ctx.textAlign = "left";
+            ctx.fillText(snakeSelectedOption === 0 ? "▶ Retry" : "  Retry", 40, 100);
+            ctx.fillText(snakeSelectedOption === 1 ? "▶ Exit to Menu" : "  Exit to Menu", 40, 112);
+        }
+    }
+
+    ////////////////////
+    // PONG GAME
+    ////////////////////
+    let playerPaddle = { x: 0, y: 0, width: 0, height: 0 };
+    let aiPaddle = { x: 0, y: 0, width: 0, height: 0 };
+    let ball = { x: 0, y: 0, radius: 0, dx: 0, dy: 0 };
+    let playerScore = 0;
+    let aiScore = 0;
+    let pongGameOver = false;
+    let pongLevel = 1;
+
+    // Initialize Pong game
+    function initPong() {
+        playerPaddle = {
+            x: 70,
+            y: 140,
+            width: 30,
+            height: 5
+        };
+        aiPaddle = {
+            x: 70,
+            y: 15,
+            width: 30,
+            height: 5
+        };
+        resetBall();
+        playerScore = 0;
+        aiScore = 0;
+        pongGameOver = false;
+        pongLevel = 1;
+        pongSelectedOption = 0;
+        pongEndScreenListenerActive = false;
+    }
+
+    // Reset ball position
+    function resetBall() {
+        // Using 0.25x the original speed (0.5 instead of 2)
+        ball = {
+            x: 75,
+            y: 75,
+            radius: 3,
+            dx: Math.random() > 0.5 ? 0.5 : -0.5,
+            dy: Math.random() > 0.5 ? 0.5 : -0.5
+        };
+    }
+
+    // Update Pong game state
+    function updatePong() {
+        if (pongGameOver) return;
+
+        // Move ball
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        // Ball collision with walls
+        if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= 150) {
+            ball.dx = -ball.dx;
+        }
+
+        // Ball collision with paddles
+        if (
+            ball.y - ball.radius <= aiPaddle.y + aiPaddle.height &&
+            ball.x >= aiPaddle.x &&
+            ball.x <= aiPaddle.x + aiPaddle.width &&
+            ball.dy < 0
+        ) {
+            ball.dy = -ball.dy;
+            // Play paddle hit sound
+            playGameSound('pong-paddle');
+        }
+
+        if (
+            ball.y + ball.radius >= playerPaddle.y &&
+            ball.x >= playerPaddle.x &&
+            ball.x <= playerPaddle.x + playerPaddle.width &&
+            ball.dy > 0
+        ) {
+            ball.dy = -ball.dy;
+            // Play paddle hit sound
+            playGameSound('pong-paddle');
+        }
+
+        // Ball out of bounds
+        if (ball.y < 0) {
+            // Player scores
+            playerScore++;
+
+            // Level up every 3 points
+            if (playerScore % 3 === 0) {
+                pongLevel++;
+            }
+
+            resetBall();
+        }
+
+        if (ball.y > 160) {
+            // AI scores
+            aiScore++;
+
+            // Game over if AI reaches 5 points
+            if (aiScore >= 5) {
+                pongGameOver = true;
+            }
+
+            resetBall();
+        }
+
+        // Move AI paddle with increasing difficulty based on level
+        const aiSpeed = 1 + pongLevel * 0.5;
+        const aiTargetX = ball.x - aiPaddle.width / 2;
+
+        // Add some randomness to make it beatable
+        const randomOffset = Math.random() * 10 - 5;
+        const aiNewX = aiPaddle.x + (aiTargetX + randomOffset - aiPaddle.x) * (aiSpeed / 10);
+
+        aiPaddle.x = Math.max(0, Math.min(150 - aiPaddle.width, aiNewX));
+    }
+
+    // Render Pong game
+    function renderPong() {
+        ctx.fillStyle = "#9bbc0f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (pongGameOver) {
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, 60);
+            
+            ctx.font = "8px Arial";
+            ctx.fillText(`FINAL SCORE: ${playerScore}-${aiScore}`, canvas.width / 2, 80);
+            
+            // Add retry option
+            ctx.textAlign = "left";
+            ctx.fillText(pongSelectedOption === 0 ? "▶ Retry" : "  Retry", 40, 100);
+            ctx.fillText(pongSelectedOption === 1 ? "▶ Exit to Menu" : "  Exit to Menu", 40, 112);
+            return;
+        }
+
+        // Draw center line
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, 80);
+        ctx.lineTo(150, 80);
+        ctx.strokeStyle = "#0f380f";
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw paddles
+        ctx.fillStyle = "#0f380f";
+        ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+        ctx.fillRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height);
+
+        // Draw ball
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#0f380f";
+        ctx.fill();
+        ctx.closePath();
+
+        // Draw score and level
+        ctx.fillStyle = "#0f380f";
+        ctx.font = "8px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`YOU: ${playerScore}`, 5, 90);
+        ctx.fillText(`CPU: ${aiScore}`, 5, 70);
+        ctx.textAlign = "right";
+        ctx.fillText(`LEVEL: ${pongLevel}`, 145, 80);
+    }
+
+    ////////////////////
+    // SPACE INVADERS GAME
+    ////////////////////
+    let siPlayer = {};
+    let siBullets = [];
+    let siAliens = [];
+    let siAlienDirection = 1;
+    let siAlienBullets = [];
+    let siScore = 0;
+    let siLevel = 1;
+    let siGameOver = false;
+    let siShowEndScreen = false;
+    let siSelectedEndOption = 0;
+    let siLastUpdateTime = 0;
+    const siUpdateInterval = 1000 / 30; // 30 FPS
+
+    // Initialize Space Invaders game
+    function initSpaceInvaders() {
+        siPlayer = {
+            x: 75,
+            y: 140,
+            width: 10,
+            height: 8
+        };
+        siBullets = [];
+        siAlienBullets = [];
+        siAlienDirection = 1;
+        siScore = 0;
+        siLevel = 1;
+        siGameOver = false;
+        siShowEndScreen = false;
+        siSelectedEndOption = 0;
+        
+        // Create aliens
+        siAliens = [];
+        const rows = 3;
+        const cols = 8;
+        const alienWidth = 10;
+        const alienHeight = 8;
+        const padding = 5;
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                siAliens.push({
+                    x: col * (alienWidth + padding) + 15,
+                    y: row * (alienHeight + padding) + 20,
+                    width: alienWidth,
+                    height: alienHeight,
+                    alive: true
+                });
+            }
+        }
+    }
+
+    // Check collision between two entities
+    function checkCollision(a, b) {
+        return a.x < b.x + b.width && 
+               a.x + a.width > b.x && 
+               a.y < b.y + b.height && 
+               a.y + a.height > b.y;
+    }
+
+    // Update Space Invaders game state
+    function updateSpaceInvaders(timestamp) {
+        if (siGameOver) {
+            if (!siShowEndScreen) {
+                setTimeout(() => {
+                    siShowEndScreen = true;
+                }, 2000);
+            }
+            return;
+        }
+
+        if (timestamp - siLastUpdateTime < siUpdateInterval) return;
+        siLastUpdateTime = timestamp;
+
+        // Move bullets
+        siBullets = siBullets
+            .map(bullet => ({
+                ...bullet,
+                y: bullet.y - 3
+            }))
+            .filter(bullet => bullet.y > 0);
+
+        // Move alien bullets
+        siAlienBullets = siAlienBullets
+            .map(bullet => ({
+                ...bullet,
+                y: bullet.y + 2
+            }))
+            .filter(bullet => bullet.y < 160);
+
+        // Move aliens
+        let shouldChangeDirection = false;
+        let allDead = true;
+
+        siAliens = siAliens.map(alien => {
+            if (!alien.alive) return alien;
+
+            allDead = false;
+            const newX = alien.x + siAlienDirection * (0.5 + siLevel * 0.2);
+
+            if (newX <= 0 || newX + alien.width >= 150) {
+                shouldChangeDirection = true;
+            }
+
+            return {
+                ...alien,
+                x: newX
+            };
+        });
+
+        if (shouldChangeDirection) {
+            siAlienDirection = -siAlienDirection;
+            
+            siAliens = siAliens.map(alien => ({
+                ...alien,
+                y: alien.y + 5
+            }));
+        }
+
+        // Check if all aliens are dead
+        if (allDead) {
+            siLevel++;
+            
+            // Create new aliens for next level
+            siAliens = [];
+            const rows = 3;
+            const cols = 8;
+            const alienWidth = 10;
+            const alienHeight = 8;
+            const padding = 5;
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    siAliens.push({
+                        x: col * (alienWidth + padding) + 15,
+                        y: row * (alienHeight + padding) + 20,
+                        width: alienWidth,
+                        height: alienHeight,
+                        alive: true
+                    });
+                }
+            }
+            
+            siAlienBullets = [];
+            return;
+        }
+
+        // Random alien shooting
+        if (Math.random() < 0.02 + siLevel * 0.01) {
+            const livingAliens = siAliens.filter(alien => alien.alive);
+            if (livingAliens.length > 0) {
+                const shooter = livingAliens[Math.floor(Math.random() * livingAliens.length)];
+                siAlienBullets.push({
+                    x: shooter.x + shooter.width / 2 - 1,
+                    y: shooter.y + shooter.height,
+                    width: 2,
+                    height: 5
+                });
+            }
+        }
+
+        // Check collisions
+        // Bullets hitting aliens
+        for (let bi = siBullets.length - 1; bi >= 0; bi--) {
+            const bullet = siBullets[bi];
+            
+            for (let ai = 0; ai < siAliens.length; ai++) {
+                const alien = siAliens[ai];
+                
+                if (alien.alive && checkCollision(bullet, alien)) {
+                    siAliens[ai].alive = false;
+                    siBullets.splice(bi, 1);
+                    siScore += 10;
+                    break;
+                }
+            }
+        }
+
+        // Alien bullets hitting player
+        for (let i = 0; i < siAlienBullets.length; i++) {
+            if (checkCollision(siAlienBullets[i], siPlayer)) {
+                siGameOver = true;
+                break;
+            }
+        }
+
+        // Aliens reaching bottom
+        for (let i = 0; i < siAliens.length; i++) {
+            const alien = siAliens[i];
+            if (alien.alive && alien.y + alien.height >= siPlayer.y) {
+                siGameOver = true;
+                break;
+            }
+        }
+    }
+
+    // Render Space Invaders game
+    function renderSpaceInvaders() {
+        ctx.fillStyle = "#9bbc0f";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (siShowEndScreen) {
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, 60);
+            
+            ctx.font = "8px Arial";
+            ctx.fillText(`FINAL SCORE: ${siScore}`, canvas.width / 2, 80);
+
+            const options = ["Restart Game", "Back to Menu"];
+            options.forEach((option, index) => {
+                ctx.fillStyle = "#0f380f";
+                ctx.font = "8px Arial";
+                ctx.textAlign = "left";
+                ctx.fillText(
+                    siSelectedEndOption === index ? `▶ ${option}` : `  ${option}`, 
+                    40, 
+                    100 + index * 12
+                );
+            });
+            
+            return;
+        }
+
+        // Draw player
+        ctx.fillStyle = "#0f380f";
+        ctx.fillRect(siPlayer.x, siPlayer.y, siPlayer.width, siPlayer.height);
+
+        // Draw bullets
+        ctx.fillStyle = "#0f380f";
+        siBullets.forEach(bullet => {
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        });
+
+        // Draw aliens
+        siAliens.forEach(alien => {
+            if (alien.alive) {
+                ctx.fillStyle = "#0f380f";
+                ctx.fillRect(alien.x, alien.y, alien.width, alien.height);
+            }
+        });
+
+        // Draw alien bullets
+        ctx.fillStyle = "#0f380f";
+        siAlienBullets.forEach(bullet => {
+            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        });
+
+        // Draw score and level
+        ctx.fillStyle = "#0f380f";
+        ctx.font = "8px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`SCORE: ${siScore}`, 5, 10);
+        ctx.textAlign = "right";
+        ctx.fillText(`LEVEL: ${siLevel}`, 145, 10);
+
+        // Draw game over
+        if (siGameOver && !siShowEndScreen) {
+            ctx.fillStyle = "#0f380f";
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, 75);
+        }
+    }
+
+    // Initialize the simulator
+    init();
+});
+</script>
+</body>
+</html>
